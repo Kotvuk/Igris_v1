@@ -679,7 +679,7 @@ class AgentCore:
     def register_builtin_tools(self) -> None:
         """Register default tools that come with the agent."""
 
-        async def tool_get_time() -> str:
+        async def tool_get_time(**kwargs) -> str:
             """Get current date and time."""
             from datetime import datetime
             now = datetime.now()
@@ -692,7 +692,7 @@ class AgentCore:
             parameters={"type": "object", "properties": {}, "required": []},
         )
 
-        async def tool_set_mode(mode: str) -> str:
+        async def tool_set_mode(mode: str, **kwargs) -> str:
             """Change operating mode."""
             return self.set_mode(mode)
 
@@ -713,7 +713,7 @@ class AgentCore:
             },
         )
 
-        async def tool_web_search(query: str) -> str:
+        async def tool_web_search(query: str, **kwargs) -> str:
             """Search the web."""
             try:
                 async with httpx.AsyncClient(timeout=15.0) as client:
@@ -743,7 +743,7 @@ class AgentCore:
             },
         )
 
-        async def tool_remember(text: str) -> str:
+        async def tool_remember(text: str, **kwargs) -> str:
             """Save something to memory."""
             if self.memory:
                 await self.memory.save(text)
@@ -763,7 +763,7 @@ class AgentCore:
             },
         )
 
-        async def tool_recall(query: str) -> str:
+        async def tool_recall(query: str, **kwargs) -> str:
             """Search memories."""
             if self.memory:
                 results = await self.memory.search(query)
@@ -783,7 +783,7 @@ class AgentCore:
             },
         )
 
-        async def tool_screenshot() -> str:
+        async def tool_screenshot(**kwargs) -> str:
             """Take a screenshot of the current screen."""
             if self.screen:
                 path = await self.screen.capture()
@@ -797,7 +797,7 @@ class AgentCore:
             parameters={"type": "object", "properties": {}, "required": []},
         )
 
-        async def tool_focus_start(minutes: int = 25) -> str:
+        async def tool_focus_start(minutes: int = 25, **kwargs) -> str:
             """Start a focus timer."""
             if self.focus:
                 await self.focus.start(minutes)

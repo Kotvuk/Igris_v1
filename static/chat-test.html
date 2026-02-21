@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGRIS Test (REST API)</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#06060a;color:#e0e0e0;font-family:'Inter',sans-serif;height:100vh;display:flex;flex-direction:column;padding:20px}
+h1{font-family:'Space Grotesk',sans-serif;color:#ef4444;margin-bottom:20px;text-align:center}
+.chat{flex:1;overflow-y:auto;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;margin-bottom:20px}
+.message{margin-bottom:16px;padding:12px 16px;border-radius:12px}
+.user{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.15);text-align:right}
+.igris{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06)}
+.input-area{display:flex;gap:10px}
+input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px 16px;color:#fff;font-size:14px;outline:none}
+input:focus{border-color:#ef4444}
+button{background:#ef4444;border:none;color:#fff;padding:12px 24px;border-radius:12px;cursor:pointer;font-weight:600;transition:all .2s}
+button:hover{background:#dc2626}
+button:disabled{opacity:0.5;cursor:not-allowed}
+.loading{text-align:center;color:#ef4444;margin-top:10px}
+</style>
+</head>
+<body>
+<h1>⚔️ IGRIS Chat Test (REST API)</h1>
+<div class="chat" id="chat"></div>
+<div class="input-area">
+<input type="text" id="input" placeholder="Напишите сообщение IGRIS..." onkeypress="if(event.key==='Enter')send()">
+<button onclick="send()" id="btn">Отправить</button>
+</div>
+<div class="loading" id="loading" style="display:none">Загрузка...</div>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('input');
+const btn = document.getElementById('btn');
+const loading = document.getElementById('loading');
+
+async function send() {
+  const msg = input.value.trim();
+  if (!msg) return;
+  
+  addMessage('user', msg);
+  input.value = '';
+  btn.disabled = true;
+  loading.style.display = 'block';
+  
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg, stream: false})
+    });
+    const data = await res.json();
+    addMessage('igris', data.response || data.error || 'Нет ответа');
+  } catch (e) {
+    addMessage('igris', 'Ошибка: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+function addMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  div.innerHTML = `<strong>${role === 'user' ? 'Вы' : 'IGRIS'}:</strong> ${text}`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+addMessage('igris', 'Сэр, я готов служить. Чем могу помочь?');
+input.focus();
+</script>
+</body>
+</html>
