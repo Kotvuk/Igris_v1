@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGRIS — Avatar</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--surface:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--red:#ef4444;--red-glow:rgba(239,68,68,0.3);--text:#e0e0e0;--text-muted:rgba(255,255,255,0.5);--glass:rgba(255,255,255,0.04)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100vh;overflow:hidden;display:flex}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.sidebar{width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;flex-shrink:0}
+.sidebar .logo{width:40px;height:40px;background:var(--red);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;margin-bottom:16px;box-shadow:0 0 20px var(--red-glow)}
+.sidebar a{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);text-decoration:none;font-size:20px;transition:all .2s}
+.sidebar a:hover,.sidebar a.active{background:var(--glass);color:#fff}
+.sidebar a.active{color:var(--red)}
+.sidebar .spacer{flex:1}
+.main{flex:1;position:relative}
+#canvas3d{width:100%;height:100%;display:block}
+
+.controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
+.ctrl-btn{padding:10px 18px;border-radius:10px;border:1px solid var(--border);background:rgba(6,6,10,0.8);backdrop-filter:blur(12px);color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.ctrl-btn:hover,.ctrl-btn.active{border-color:var(--red);color:#fff;box-shadow:0 0 12px rgba(239,68,68,0.15)}
+
+.state-panel{position:absolute;top:24px;right:24px;background:rgba(6,6,10,0.85);backdrop-filter:blur(12px);border:1px solid var(--border);border-radius:14px;padding:16px 20px;z-index:10;min-width:180px}
+.state-panel h3{font-size:13px;color:var(--text-muted);margin-bottom:8px}
+.state-panel .state{font-size:18px;font-weight:700;color:var(--red);font-family:'Space Grotesk',sans-serif}
+.state-panel .scene-label{font-size:11px;color:var(--text-muted);margin-top:8px}
+
+.scene-picker{position:absolute;top:24px;left:96px;display:flex;gap:8px;z-index:10}
+.scene-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:rgba(6,6,10,0.8);backdrop-filter:blur(12px);color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .2s}
+.scene-btn:hover,.scene-btn.active{border-color:var(--red);color:#fff}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">IG</div>
+  <a href="index.html" title="Chat">💬</a>
+  <a href="settings.html" title="Settings">⚙️</a>
+  <a href="avatar.html" class="active" title="Avatar">🗡️</a>
+  <a href="gallery.html" title="Gallery">🖼️</a>
+  <a href="dashboard.html" title="Dashboard">📊</a>
+  <a href="focus.html" title="Focus">⏱️</a>
+  <span class="spacer"></span>
+</nav>
+
+<div class="main">
+  <canvas id="canvas3d"></canvas>
+
+  <div class="scene-picker">
+    <button class="scene-btn active" onclick="setScene('void')">🌑 Void</button>
+    <button class="scene-btn" onclick="setScene('castle')">🏰 Castle</button>
+    <button class="scene-btn" onclick="setScene('battlefield')">⚔️ Battlefield</button>
+  </div>
+
+  <div class="state-panel">
+    <h3>Current State</h3>
+    <div class="state" id="stateLabel">IDLE</div>
+    <div class="scene-label" id="sceneLabel">Scene: Dark Void</div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="setState('SLEEPING')">💤 Sleep</button>
+    <button class="ctrl-btn" onclick="setState('LISTENING')">👂 Listen</button>
+    <button class="ctrl-btn" onclick="setState('THINKING')">🤔 Think</button>
+    <button class="ctrl-btn" onclick="setState('SPEAKING')">🗣 Speak</button>
+    <button class="ctrl-btn" onclick="setState('WORKING')">⚔️ Work</button>
+    <button class="ctrl-btn active" onclick="setState('IDLE')">😶 Idle</button>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {EffectComposer} from 'three/addons/postprocessing/EffectComposer.js';
+import {RenderPass} from 'three/addons/postprocessing/RenderPass.js';
+import {UnrealBloomPass} from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const canvas=document.getElementById('canvas3d');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setSize(canvas.clientWidth,canvas.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.shadowMap.enabled=true;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.FogExp2(0x06060a,0.04);
+const camera=new THREE.PerspectiveCamera(50,canvas.clientWidth/canvas.clientHeight,0.1,100);
+camera.position.set(0,2,6);
+
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=0.05;controls.target.set(0,1.2,0);controls.maxDistance=12;controls.minDistance=2;
+
+// Post-processing
+const composer=new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(canvas.clientWidth,canvas.clientHeight),0.8,0.4,0.85);
+composer.addPass(bloom);
+
+// Lighting
+const ambientLight=new THREE.AmbientLight(0x1a1a2e,0.6);
+scene.add(ambientLight);
+const dirLight=new THREE.DirectionalLight(0xffffff,0.4);
+dirLight.position.set(5,8,5);dirLight.castShadow=true;scene.add(dirLight);
+const redLight=new THREE.PointLight(0xef4444,1,10);
+redLight.position.set(0,3,2);scene.add(redLight);
+
+// Ground
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0x080810,roughness:0.9}));
+ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);
+
+// Materials
+const armorMat=new THREE.MeshStandardMaterial({color:0x1a1a2a,metalness:0.9,roughness:0.3});
+const darkMat=new THREE.MeshStandardMaterial({color:0x0e0e18,metalness:0.8,roughness:0.4});
+const redMat=new THREE.MeshStandardMaterial({color:0xef4444,emissive:0xef4444,emissiveIntensity:0.5});
+const swordMat=new THREE.MeshStandardMaterial({color:0xccccdd,metalness:1,roughness:0.1});
+
+// Knight group
+const knight=new THREE.Group();
+
+// Body (torso)
+const torso=new THREE.Mesh(new THREE.BoxGeometry(0.8,1,0.5),armorMat);
+torso.position.y=1.5;torso.castShadow=true;knight.add(torso);
+
+// Waist
+const waist=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.3,0.45),darkMat);
+waist.position.y=0.9;knight.add(waist);
+
+// Legs
+[-0.2,0.2].forEach(x=>{
+  const leg=new THREE.Mesh(new THREE.BoxGeometry(0.25,0.8,0.3),armorMat);
+  leg.position.set(x,0.4,0);leg.castShadow=true;knight.add(leg);
+});
+
+// Shoulders
+[-0.55,0.55].forEach(x=>{
+  const shoulder=new THREE.Mesh(new THREE.BoxGeometry(0.35,0.25,0.35),armorMat);
+  shoulder.position.set(x,1.95,0);knight.add(shoulder);
+});
+
+// Arms
+const leftArm=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.7,0.2),darkMat);
+leftArm.position.set(-0.6,1.45,0);knight.add(leftArm);
+const rightArm=new THREE.Mesh(new THREE.BoxGeometry(0.2,0.7,0.2),darkMat);
+rightArm.position.set(0.6,1.45,0);knight.add(rightArm);
+
+// Helmet
+const helmet=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.5,0.5),armorMat);
+helmet.position.y=2.35;knight.add(helmet);
+// Helmet crest
+const crest=new THREE.Mesh(new THREE.BoxGeometry(0.08,0.3,0.5),redMat);
+crest.position.y=2.65;knight.add(crest);
+
+// Eyes (glowing red)
+const eyeLeft=new THREE.PointLight(0xef4444,2,3);
+eyeLeft.position.set(-0.12,2.35,0.26);knight.add(eyeLeft);
+const eyeRight=new THREE.PointLight(0xef4444,2,3);
+eyeRight.position.set(0.12,2.35,0.26);knight.add(eyeRight);
+// Eye meshes
+[-0.12,0.12].forEach(x=>{
+  const eye=new THREE.Mesh(new THREE.SphereGeometry(0.04),redMat);
+  eye.position.set(x,2.35,0.26);knight.add(eye);
+});
+
+// Cape
+const capeGeo=new THREE.PlaneGeometry(0.8,1.2,8,12);
+const capeMat=new THREE.MeshStandardMaterial({color:0x3a0a0a,side:THREE.DoubleSide,roughness:0.8});
+const cape=new THREE.Mesh(capeGeo,capeMat);
+cape.position.set(0,1.3,-0.3);knight.add(cape);
+const capeVerts=capeGeo.attributes.position.array.slice();
+
+// Sword
+const swordGroup=new THREE.Group();
+const blade=new THREE.Mesh(new THREE.BoxGeometry(0.06,1.4,0.02),swordMat);
+blade.position.y=0.7;swordGroup.add(blade);
+const hilt=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.06,0.06),darkMat);
+swordGroup.add(hilt);
+const pommel=new THREE.Mesh(new THREE.SphereGeometry(0.04),redMat);
+pommel.position.y=-0.08;swordGroup.add(pommel);
+// Sword glow
+const swordGlow=new THREE.PointLight(0xef4444,0.5,2);
+swordGlow.position.y=0.7;swordGroup.add(swordGlow);
+swordGroup.position.set(0.7,0.8,0);swordGroup.rotation.z=-0.2;
+knight.add(swordGroup);
+
+scene.add(knight);
+
+// Shadow particles
+const particleCount=60;
+const particleGeo=new THREE.BufferGeometry();
+const pPositions=new Float32Array(particleCount*3);
+for(let i=0;i<particleCount;i++){
+  pPositions[i*3]=(Math.random()-0.5)*4;
+  pPositions[i*3+1]=Math.random()*3;
+  pPositions[i*3+2]=(Math.random()-0.5)*4;
+}
+particleGeo.setAttribute('position',new THREE.BufferAttribute(pPositions,3));
+const particleMat=new THREE.PointsMaterial({color:0x1a0a0a,size:0.08,transparent:true,opacity:0.6});
+const particles=new THREE.Points(particleGeo,particleMat);
+scene.add(particles);
+
+// State
+let currentState='IDLE';
+let time=0;
+
+window.setState=function(s){
+  currentState=s;
+  document.getElementById('stateLabel').textContent=s;
+  document.querySelectorAll('.ctrl-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+};
+
+window.setScene=function(s){
+  document.querySelectorAll('.scene-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  const labels={void:'Dark Void',castle:'Castle Throne',battlefield:'Battlefield'};
+  document.getElementById('sceneLabel').textContent='Scene: '+labels[s];
+  if(s==='void'){scene.fog=new THREE.FogExp2(0x06060a,0.04);scene.background=null;ground.material.color.setHex(0x080810)}
+  else if(s==='castle'){scene.fog=new THREE.FogExp2(0x0a0a14,0.02);ground.material.color.setHex(0x12121e)}
+  else{scene.fog=new THREE.FogExp2(0x1a0808,0.03);ground.material.color.setHex(0x140a0a)}
+};
+
+// WebSocket for state updates
+try{
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  const ws=new WebSocket(`${proto}//${location.hostname}:3000/ws`);
+  ws.onmessage=(e)=>{
+    const d=JSON.parse(e.data);
+    if(d.type==='avatar_state'){currentState=d.state;document.getElementById('stateLabel').textContent=d.state}
+  };
+}catch(e){}
+
+// Animation loop
+function animate(){
+  requestAnimationFrame(animate);
+  time+=0.016;
+  controls.update();
+
+  // Cape animation
+  const pos=capeGeo.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const oy=capeVerts[i*3+1];
+    const ox=capeVerts[i*3];
+    const factor=(1-oy/1.2)*0.15;
+    pos.array[i*3+2]=capeVerts[i*3+2]-Math.sin(time*2+oy*3)*factor;
+    pos.array[i*3]=ox+Math.sin(time*1.5+oy*2)*factor*0.3;
+  }
+  pos.needsUpdate=true;
+
+  // Particles
+  const pp=particleGeo.attributes.position;
+  for(let i=0;i<particleCount;i++){
+    pp.array[i*3+1]+=0.003;
+    if(pp.array[i*3+1]>3.5)pp.array[i*3+1]=0;
+    pp.array[i*3]+=Math.sin(time+i)*0.001;
+  }
+  pp.needsUpdate=true;
+
+  // State behaviors
+  const eyeBase=currentState==='SLEEPING'?0:2;
+  const eyeIntensity=currentState==='LISTENING'?4:currentState==='WORKING'?3:eyeBase;
+  eyeLeft.intensity+=(eyeIntensity-eyeLeft.intensity)*0.05;
+  eyeRight.intensity+=(eyeIntensity-eyeRight.intensity)*0.05;
+
+  if(currentState==='SLEEPING'){
+    knight.rotation.z=Math.sin(time*0.5)*0.02;
+    knight.position.y=Math.sin(time*0.8)*0.02;
+  }else if(currentState==='LISTENING'){
+    helmet.rotation.z=Math.sin(time*1.5)*0.05;
+    helmet.rotation.x=Math.sin(time)*0.03;
+  }else if(currentState==='THINKING'){
+    rightArm.rotation.x=Math.sin(time*0.8)*0.1-0.5;
+    rightArm.position.z=0.2;
+    particleMat.opacity=0.4+Math.sin(time*3)*0.3;
+  }else if(currentState==='SPEAKING'){
+    const pulse=0.5+Math.sin(time*8)*0.5;
+    redLight.intensity=1+pulse;
+    knight.rotation.y=Math.sin(time*1.2)*0.05;
+  }else if(currentState==='WORKING'){
+    swordGroup.rotation.z=-0.8+Math.sin(time*2)*0.3;
+    swordGlow.intensity=1+Math.sin(time*4)*0.5;
+    particleMat.size=0.1+Math.sin(time*3)*0.04;
+    bloom.strength=1.2;
+  }else{
+    // IDLE: breathing
+    knight.position.y=Math.sin(time*1.2)*0.015;
+    swordGroup.rotation.z=-0.2;
+    rightArm.rotation.x=0;rightArm.position.z=0;
+    bloom.strength=0.8;
+    particleMat.opacity=0.6;particleMat.size=0.08;
+    redLight.intensity=1;
+    knight.rotation.y*=0.95;knight.rotation.z*=0.95;
+    helmet.rotation.z*=0.95;helmet.rotation.x*=0.95;
+    // Blink
+    if(Math.sin(time*0.3)>0.98){eyeLeft.intensity=0;eyeRight.intensity=0}
+  }
+
+  composer.render();
+}
+animate();
+
+window.addEventListener('resize',()=>{
+  const w=canvas.clientWidth,h=canvas.clientHeight;
+  camera.aspect=w/h;camera.updateProjectionMatrix();
+  renderer.setSize(w,h);composer.setSize(w,h);
+});
+</script>
+</body>
+</html>

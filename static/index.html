@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGRIS — Shadow Monarch's Knight</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--surface:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--red:#ef4444;--red-glow:rgba(239,68,68,0.3);--text:#e0e0e0;--text-muted:rgba(255,255,255,0.5);--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100vh;overflow:hidden;display:flex}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+
+/* Sidebar */
+.sidebar{width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;flex-shrink:0;z-index:10}
+.sidebar .logo{width:40px;height:40px;background:var(--red);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;margin-bottom:16px;box-shadow:0 0 20px var(--red-glow)}
+.sidebar a{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);text-decoration:none;font-size:20px;transition:all .2s}
+.sidebar a:hover,.sidebar a.active{background:var(--glass);color:#fff;box-shadow:0 0 12px rgba(239,68,68,0.1)}
+.sidebar a.active{color:var(--red)}
+.sidebar .spacer{flex:1}
+
+/* Main layout */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* Status bar */
+.status-bar{height:48px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+.status-bar .mode{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;font-family:'Space Grotesk',sans-serif}
+.status-bar .mode .dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red-glow);animation:pulse 2s infinite}
+.status-bar .conn{font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px}
+.status-bar .conn.connected .indicator{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.4)}
+.status-bar .conn .indicator{width:6px;height:6px;border-radius:50%;background:#666}
+.status-bar .spacer{flex:1}
+.status-bar .key-info{font-size:11px;color:var(--text-muted);background:var(--glass);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.search-toggle{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;transition:all .2s}
+.search-toggle:hover{border-color:var(--red);color:#fff}
+
+/* Search bar */
+.search-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:10px 20px;display:none}
+.search-bar.open{display:flex;align-items:center;gap:10px}
+.search-bar input{flex:1;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:8px 14px;color:#fff;font-size:13px;outline:none}
+.search-bar input:focus{border-color:var(--red)}
+.search-bar .count{font-size:12px;color:var(--text-muted);white-space:nowrap}
+
+/* Chat area */
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:6px}
+.chat-area::-webkit-scrollbar-track{background:transparent}
+.chat-area::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+
+/* Messages */
+.message{display:flex;gap:10px;max-width:80%;animation:msgIn .3s ease}
+.message.user{align-self:flex-end;flex-direction:row-reverse}
+.message.igris{align-self:flex-start}
+.msg-avatar{width:32px;height:32px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px}
+.message.igris .msg-avatar{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.message.user .msg-avatar{background:rgba(255,255,255,0.08);color:#fff}
+.msg-bubble{padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.6;position:relative}
+.message.igris .msg-bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:4px}
+.message.user .msg-bubble{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.15);border-bottom-right-radius:4px}
+.msg-bubble p{margin:0 0 8px}
+.msg-bubble p:last-child{margin:0}
+.msg-bubble code{background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-size:13px}
+.msg-bubble pre{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:8px;padding:12px;margin:8px 0;overflow-x:auto}
+.msg-bubble pre code{background:none;padding:0}
+.msg-time{font-size:10px;color:var(--text-muted);margin-top:4px;text-align:right}
+
+/* Typing indicator */
+.typing{display:none;align-self:flex-start;align-items:center;gap:10px;padding:0 4px}
+.typing.active{display:flex}
+.typing .msg-avatar{width:32px;height:32px;border-radius:10px;background:rgba(239,68,68,0.15);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid rgba(239,68,68,0.2)}
+.typing-dots{display:flex;gap:4px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:4px}
+.typing-dots span{width:7px;height:7px;background:var(--text-muted);border-radius:50%;animation:typingBounce 1.4s infinite}
+.typing-dots span:nth-child(2){animation-delay:.2s}
+.typing-dots span:nth-child(3){animation-delay:.4s}
+
+/* Input area */
+.input-area{padding:16px 20px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.input-wrapper{display:flex;gap:10px;align-items:flex-end}
+.input-box{flex:1;background:var(--glass);border:1px solid var(--border);border-radius:14px;padding:12px 16px;color:#fff;font-size:14px;font-family:'Inter',sans-serif;resize:none;outline:none;min-height:48px;max-height:200px;line-height:1.5;transition:border-color .2s}
+.input-box:focus{border-color:var(--red)}
+.input-box::placeholder{color:var(--text-muted)}
+.send-btn{width:48px;height:48px;border-radius:14px;background:var(--red);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.send-btn:hover{background:#dc2626;box-shadow:0 0 20px var(--red-glow);transform:scale(1.05)}
+.send-btn:active{transform:scale(0.95)}
+.input-hint{font-size:11px;color:var(--text-muted);margin-top:6px;padding:0 4px}
+.input-hint kbd{background:var(--glass);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px}
+
+/* Drop zone */
+.drop-zone{position:absolute;inset:0;background:rgba(239,68,68,0.08);border:2px dashed var(--red);border-radius:16px;display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+.drop-zone.active{display:flex}
+.drop-zone-text{font-size:18px;font-family:'Space Grotesk',sans-serif;font-weight:600;color:var(--red)}
+
+/* Confirmation modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.open{display:flex}
+.modal{background:rgba(20,20,28,0.95);border:1px solid var(--border);border-radius:20px;padding:28px;max-width:440px;width:90%;animation:modalIn .3s ease}
+.modal h3{font-size:18px;margin-bottom:8px;color:#fff}
+.modal p{font-size:14px;color:var(--text-muted);margin-bottom:20px;line-height:1.6}
+.modal .actions{display:flex;gap:10px;justify-content:flex-end}
+.modal .btn{padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.modal .btn-confirm{background:var(--red);color:#fff}
+.modal .btn-confirm:hover{background:#dc2626;box-shadow:0 0 16px var(--red-glow)}
+.modal .btn-cancel{background:var(--glass);color:var(--text-muted);border:1px solid var(--border)}
+.modal .btn-cancel:hover{color:#fff}
+
+/* Welcome */
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:16px;opacity:0.7}
+.welcome .icon{font-size:48px;margin-bottom:8px}
+.welcome h2{font-size:24px;color:#fff}
+.welcome p{color:var(--text-muted);max-width:400px;font-size:14px;line-height:1.6}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes msgIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+
+@media(max-width:768px){
+  .sidebar{width:56px}
+  .message{max-width:92%}
+}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">IG</div>
+  <a href="index.html" class="active" title="Chat">💬</a>
+  <a href="settings.html" title="Settings">⚙️</a>
+  <a href="avatar.html" title="Avatar">🗡️</a>
+  <a href="gallery.html" title="Gallery">🖼️</a>
+  <a href="dashboard.html" title="Dashboard">📊</a>
+  <a href="focus.html" title="Focus">⏱️</a>
+  <span class="spacer"></span>
+  <a href="#" id="themeToggle" title="Theme">🌙</a>
+</nav>
+
+<div class="main" style="position:relative">
+  <div class="drop-zone" id="dropZone"><span class="drop-zone-text">Drop files here to attach</span></div>
+
+  <div class="status-bar">
+    <div class="mode"><span class="dot"></span><span id="modeLabel">Guard Mode</span></div>
+    <div class="conn" id="connStatus"><span class="indicator"></span><span>Disconnected</span></div>
+    <span class="spacer"></span>
+    <span class="key-info" id="keyInfo">Key: groq-primary</span>
+    <button class="search-toggle" id="searchBtn">🔍 Search</button>
+  </div>
+
+  <div class="search-bar" id="searchBar">
+    <input type="text" id="searchInput" placeholder="Search messages...">
+    <span class="count" id="searchCount"></span>
+    <button class="search-toggle" onclick="toggleSearch()">✕</button>
+  </div>
+
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcome">
+      <div class="icon">⚔️</div>
+      <h2>IGRIS Awaits Your Command</h2>
+      <p>The Shadow Monarch's most loyal knight stands ready. Type a message to begin.</p>
+    </div>
+  </div>
+
+  <div class="typing" id="typingIndicator">
+    <div class="msg-avatar">⚔️</div>
+    <div class="typing-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea class="input-box" id="msgInput" placeholder="Command Igris..." rows="1"></textarea>
+      <button class="send-btn" id="sendBtn">➤</button>
+    </div>
+    <div class="input-hint"><kbd>Ctrl+Enter</kbd> send · <kbd>Esc</kbd> clear · Drop files to attach</div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">⚔️ Permission Required</h3>
+    <p id="modalBody">Igris requests permission to execute this action.</p>
+    <div class="actions">
+      <button class="btn btn-cancel" id="modalCancel">Deny</button>
+      <button class="btn btn-confirm" id="modalConfirm">Allow</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Config
+marked.setOptions({highlight:(code,lang)=>{if(lang&&hljs.getLanguage(lang))return hljs.highlight(code,{language:lang}).value;return hljs.highlightAuto(code).value},breaks:true});
+
+const chatArea=document.getElementById('chatArea');
+const msgInput=document.getElementById('msgInput');
+const sendBtn=document.getElementById('sendBtn');
+const typingIndicator=document.getElementById('typingIndicator');
+const welcome=document.getElementById('welcome');
+const connStatus=document.getElementById('connStatus');
+const modeLabel=document.getElementById('modeLabel');
+const searchBar=document.getElementById('searchBar');
+const searchInput=document.getElementById('searchInput');
+const searchCount=document.getElementById('searchCount');
+const dropZone=document.getElementById('dropZone');
+const modalOverlay=document.getElementById('modalOverlay');
+const modalTitle=document.getElementById('modalTitle');
+const modalBody=document.getElementById('modalBody');
+const modalConfirm=document.getElementById('modalConfirm');
+const modalCancel=document.getElementById('modalCancel');
+
+let ws=null;
+let messages=[];
+let pendingConfirm=null;
+let attachedFiles=[];
+
+// WebSocket
+function connect(){
+  const proto=location.protocol==='https:'?'wss:':'ws:';
+  ws=new WebSocket(`${proto}//${location.hostname}:3000/ws`);
+  ws.onopen=()=>{connStatus.className='conn connected';connStatus.innerHTML='<span class="indicator"></span><span>Connected</span>'};
+  ws.onclose=()=>{connStatus.className='conn';connStatus.innerHTML='<span class="indicator"></span><span>Disconnected</span>';setTimeout(connect,3000)};
+  ws.onerror=()=>ws.close();
+  ws.onmessage=(e)=>{
+    const data=JSON.parse(e.data);
+    if(data.type==='message')addMessage('igris',data.content);
+    if(data.type==='typing')typingIndicator.classList.toggle('active',data.active);
+    if(data.type==='mode')setMode(data.mode);
+    if(data.type==='confirm')showConfirm(data.title,data.body,data.id);
+    if(data.type==='key')document.getElementById('keyInfo').textContent='Key: '+data.key;
+  };
+}
+connect();
+
+// Mode
+const modes={combat:'🔴 Combat Mode',guard:'🟡 Guard Mode',sleep:'🌙 Sleep Mode',learning:'📚 Learning Mode'};
+function setMode(m){modeLabel.textContent=modes[m]||m}
+
+// Messages
+function addMessage(role,content){
+  if(welcome)welcome.remove();
+  typingIndicator.classList.remove('active');
+  const div=document.createElement('div');
+  div.className='message '+role;
+  const time=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  const avatar=role==='igris'?'⚔️':'👤';
+  const rendered=role==='igris'?marked.parse(content):escapeHtml(content);
+  div.innerHTML=`<div class="msg-avatar">${avatar}</div><div><div class="msg-bubble">${rendered}</div><div class="msg-time">${time}</div></div>`;
+  chatArea.appendChild(div);
+  messages.push({role,content,time});
+  chatArea.scrollTop=chatArea.scrollHeight;
+  // Highlight code blocks
+  div.querySelectorAll('pre code').forEach(b=>hljs.highlightElement(b));
+}
+
+function escapeHtml(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+
+function sendMessage(){
+  const text=msgInput.value.trim();
+  if(!text&&!attachedFiles.length)return;
+  addMessage('user',text);
+  if(ws&&ws.readyState===WebSocket.OPEN){
+    const payload={type:'message',content:text};
+    if(attachedFiles.length){payload.files=attachedFiles;attachedFiles=[]}
+    ws.send(JSON.stringify(payload));
+  }
+  msgInput.value='';
+  msgInput.style.height='auto';
+}
+
+sendBtn.onclick=sendMessage;
+msgInput.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.ctrlKey){e.preventDefault();sendMessage()}
+  if(e.key==='Escape'){msgInput.value='';msgInput.style.height='auto'}
+});
+msgInput.addEventListener('input',()=>{msgInput.style.height='auto';msgInput.style.height=msgInput.scrollHeight+'px'});
+
+// Search
+document.getElementById('searchBtn').onclick=()=>toggleSearch();
+function toggleSearch(){
+  searchBar.classList.toggle('open');
+  if(searchBar.classList.contains('open'))searchInput.focus();
+  else{searchInput.value='';clearHighlights()}
+}
+searchInput.addEventListener('input',()=>{
+  clearHighlights();
+  const q=searchInput.value.toLowerCase();
+  if(!q){searchCount.textContent='';return}
+  const bubbles=chatArea.querySelectorAll('.msg-bubble');
+  let count=0;
+  bubbles.forEach(b=>{
+    if(b.textContent.toLowerCase().includes(q)){b.style.boxShadow='0 0 0 2px var(--red)';count++}
+  });
+  searchCount.textContent=count+' found';
+});
+function clearHighlights(){chatArea.querySelectorAll('.msg-bubble').forEach(b=>b.style.boxShadow='')}
+
+// Drag & Drop
+const mainEl=document.querySelector('.main');
+mainEl.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('active')});
+mainEl.addEventListener('dragleave',e=>{if(!mainEl.contains(e.relatedTarget))dropZone.classList.remove('active')});
+mainEl.addEventListener('drop',e=>{
+  e.preventDefault();dropZone.classList.remove('active');
+  [...e.dataTransfer.files].forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=()=>attachedFiles.push({name:f.name,type:f.type,data:reader.result});
+    reader.readAsDataURL(f);
+  });
+});
+
+// Confirmation modal
+function showConfirm(title,body,id){
+  modalTitle.textContent='⚔️ '+title;
+  modalBody.textContent=body;
+  modalOverlay.classList.add('open');
+  pendingConfirm=id;
+}
+modalConfirm.onclick=()=>{
+  if(ws&&pendingConfirm)ws.send(JSON.stringify({type:'confirm',id:pendingConfirm,approved:true}));
+  modalOverlay.classList.remove('open');pendingConfirm=null;
+};
+modalCancel.onclick=()=>{
+  if(ws&&pendingConfirm)ws.send(JSON.stringify({type:'confirm',id:pendingConfirm,approved:false}));
+  modalOverlay.classList.remove('open');pendingConfirm=null;
+};
+</script>
+</body>
+</html>

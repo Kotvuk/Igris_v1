@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGRIS — Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--surface:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--red:#ef4444;--red-glow:rgba(239,68,68,0.3);--text:#e0e0e0;--text-muted:rgba(255,255,255,0.5);--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.08);--green:#22c55e;--yellow:#eab308}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100vh;overflow:hidden;display:flex}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.sidebar{width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;flex-shrink:0}
+.sidebar .logo{width:40px;height:40px;background:var(--red);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;margin-bottom:16px;box-shadow:0 0 20px var(--red-glow)}
+.sidebar a{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);text-decoration:none;font-size:20px;transition:all .2s}
+.sidebar a:hover,.sidebar a.active{background:var(--glass);color:#fff}
+.sidebar a.active{color:var(--red)}
+.sidebar .spacer{flex:1}
+
+.main{flex:1;overflow-y:auto;padding:32px;display:flex;flex-direction:column;gap:24px}
+.main::-webkit-scrollbar{width:6px}
+.main::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+
+.page-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.page-header h1{font-size:24px;color:#fff}
+.header-actions{display:flex;gap:10px}
+.btn{padding:10px 18px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-primary{background:var(--red);color:#fff}
+.btn-primary:hover{background:#dc2626;box-shadow:0 0 16px var(--red-glow)}
+.btn-secondary{background:var(--glass);color:var(--text-muted);border:1px solid var(--border)}
+.btn-secondary:hover{color:#fff}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px}
+
+/* Progress bar */
+.progress-section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.progress-header span{font-size:14px;font-weight:600}
+.progress-header .count{color:var(--red);font-family:'Space Grotesk',sans-serif}
+.progress-track{height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--red),#f97316);border-radius:4px;transition:width .6s ease}
+
+/* Section card */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.section-header{padding:20px 24px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+.section-header:hover{background:var(--glass)}
+.section-header .emoji{font-size:22px}
+.section-header .info{flex:1}
+.section-header .info h3{font-size:15px;color:#fff;margin-bottom:2px}
+.section-header .info p{font-size:12px;color:var(--text-muted)}
+.section-header .status{font-size:11px;padding:4px 10px;border-radius:6px;font-weight:600}
+.status-configured{background:rgba(34,197,94,0.12);color:var(--green)}
+.status-partial{background:rgba(234,179,8,0.12);color:var(--yellow)}
+.status-none{background:rgba(255,255,255,0.05);color:var(--text-muted)}
+.status-error{background:rgba(239,68,68,0.12);color:var(--red)}
+.section-header .chevron{color:var(--text-muted);transition:transform .2s;font-size:14px}
+.section.open .chevron{transform:rotate(180deg)}
+.section-body{display:none;padding:0 24px 20px;border-top:1px solid var(--border)}
+.section.open .section-body{display:block;padding-top:20px}
+
+/* Key row */
+.key-row{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.key-row label{font-size:12px;font-weight:600;color:var(--text-muted);min-width:90px;flex-shrink:0}
+.key-input-wrap{flex:1;min-width:200px;position:relative}
+.key-input{width:100%;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:10px 40px 10px 12px;color:#fff;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.key-input:focus{border-color:var(--red)}
+.toggle-vis{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px}
+.test-btn{padding:8px 14px;border-radius:8px;border:1px solid var(--border);background:var(--glass);color:var(--text-muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.test-btn:hover{border-color:var(--red);color:#fff}
+.test-btn .spinner{width:12px;height:12px;border:2px solid var(--border);border-top-color:var(--red);border-radius:50%;display:none;animation:spin .6s linear infinite}
+.test-btn.loading .spinner{display:inline-block}
+.key-link{font-size:11px;color:var(--red);text-decoration:none;margin-top:2px;display:inline-block}
+.key-link:hover{text-decoration:underline}
+
+/* Instructions */
+.instructions{margin-top:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.instructions summary{padding:10px 14px;font-size:12px;color:var(--text-muted);cursor:pointer;list-style:none}
+.instructions summary::-webkit-details-marker{display:none}
+.instructions summary::before{content:'📖 '}
+.instructions .steps{padding:0 14px 14px;font-size:12px;color:var(--text-muted);line-height:1.8}
+.instructions .steps ol{padding-left:18px}
+
+/* Security section */
+.security-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.security-card{background:var(--glass);border:1px solid var(--border);border-radius:12px;padding:16px}
+.security-card h4{font-size:13px;color:#fff;margin-bottom:10px;font-family:'Space Grotesk',sans-serif}
+.security-card select,.security-card input[type="password"]{width:100%;background:var(--glass);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:#fff;font-size:13px;outline:none;margin-bottom:8px}
+.security-card select option{background:#16161c;color:#fff}
+
+/* Save bar */
+.save-bar{position:sticky;bottom:0;background:rgba(6,6,10,0.9);backdrop-filter:blur(12px);border-top:1px solid var(--border);padding:16px 0;display:flex;justify-content:flex-end;gap:10px}
+.save-bar .btn-primary.saved{background:var(--green);pointer-events:none}
+
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:768px){.sidebar{width:56px}.main{padding:16px}.key-row{flex-direction:column}.key-row label{min-width:auto}}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">IG</div>
+  <a href="index.html" title="Chat">💬</a>
+  <a href="settings.html" class="active" title="Settings">⚙️</a>
+  <a href="avatar.html" title="Avatar">🗡️</a>
+  <a href="gallery.html" title="Gallery">🖼️</a>
+  <a href="dashboard.html" title="Dashboard">📊</a>
+  <a href="focus.html" title="Focus">⏱️</a>
+  <span class="spacer"></span>
+</nav>
+
+<div class="main" id="mainContent">
+  <div class="page-header">
+    <h1>⚙️ Settings</h1>
+    <div class="header-actions">
+      <button class="btn btn-secondary" onclick="importConfig()">📥 Import</button>
+      <button class="btn btn-secondary" onclick="exportConfig()">📤 Export</button>
+    </div>
+  </div>
+
+  <div class="progress-section">
+    <div class="progress-header">
+      <span>Service Configuration</span>
+      <span class="count" id="progressCount">0 of 15 services</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div id="sections"></div>
+
+  <div class="section open">
+    <div class="section-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="emoji">🔒</span>
+      <div class="info"><h3>Security</h3><p>Access control, PIN, confirmation mode</p></div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <div class="security-grid">
+        <div class="security-card">
+          <h4>Access Level</h4>
+          <select id="accessLevel">
+            <option value="full">Full Access — No restrictions</option>
+            <option value="confirm" selected>Confirm — Ask before actions</option>
+            <option value="readonly">Read Only — No external actions</option>
+          </select>
+        </div>
+        <div class="security-card">
+          <h4>PIN Protection</h4>
+          <input type="password" id="pinInput" placeholder="Set a 4-6 digit PIN" maxlength="6">
+          <p style="font-size:11px;color:var(--text-muted)">Required for destructive actions</p>
+        </div>
+        <div class="security-card">
+          <h4>Confirmation Mode</h4>
+          <select id="confirmMode">
+            <option value="always">Always confirm</option>
+            <option value="destructive">Only destructive actions</option>
+            <option value="never">Never (trust Igris fully)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <button class="btn btn-secondary" onclick="resetAll()">Reset</button>
+    <button class="btn btn-primary" id="saveBtn" onclick="saveAll()">💾 Save Configuration</button>
+  </div>
+</div>
+
+<script>
+const SECTIONS=[
+  {id:'groq',emoji:'🔑',title:'Groq API Keys',desc:'Primary inference engine (5 key slots)',keys:[
+    {id:'groq_primary',label:'Primary',placeholder:'gsk_...',link:'https://console.groq.com/keys'},
+    {id:'groq_backup',label:'Backup',placeholder:'gsk_...',link:'https://console.groq.com/keys'},
+    {id:'groq_vision',label:'Vision',placeholder:'gsk_...',link:'https://console.groq.com/keys'},
+    {id:'groq_fast',label:'Fast',placeholder:'gsk_...',link:'https://console.groq.com/keys'},
+    {id:'groq_emergency',label:'Emergency',placeholder:'gsk_...',link:'https://console.groq.com/keys'}
+  ],instructions:'1. Go to console.groq.com\n2. Sign up or log in\n3. Navigate to API Keys\n4. Create a new key\n5. Copy and paste here'},
+  {id:'ai',emoji:'🤖',title:'AI Providers',desc:'OpenAI, Claude, Gemini (optional)',keys:[
+    {id:'openai_key',label:'OpenAI',placeholder:'sk-...',link:'https://platform.openai.com/api-keys'},
+    {id:'claude_key',label:'Claude',placeholder:'sk-ant-...',link:'https://console.anthropic.com/'},
+    {id:'gemini_key',label:'Gemini',placeholder:'AI...',link:'https://aistudio.google.com/apikey'}
+  ],instructions:'1. Visit the provider dashboard\n2. Create an API key\n3. Set billing if required'},
+  {id:'voice',emoji:'🎙',title:'Voice',desc:'Picovoice, ElevenLabs',keys:[
+    {id:'picovoice_key',label:'Picovoice',placeholder:'...',link:'https://console.picovoice.ai/'},
+    {id:'elevenlabs_key',label:'ElevenLabs',placeholder:'...',link:'https://elevenlabs.io/'}
+  ]},
+  {id:'search',emoji:'🔍',title:'Search',desc:'Brave, SerpAPI, Tavily',keys:[
+    {id:'brave_key',label:'Brave',placeholder:'BSA...',link:'https://brave.com/search/api/'},
+    {id:'serpapi_key',label:'SerpAPI',placeholder:'...',link:'https://serpapi.com/'},
+    {id:'tavily_key',label:'Tavily',placeholder:'tvly-...',link:'https://tavily.com/'}
+  ]},
+  {id:'google',emoji:'📧',title:'Google Services',desc:'Calendar, Gmail, YouTube (OAuth)',keys:[
+    {id:'google_client_id',label:'Client ID',placeholder:'...apps.googleusercontent.com',link:'https://console.cloud.google.com/'},
+    {id:'google_client_secret',label:'Secret',placeholder:'GOCSPX-...',link:'https://console.cloud.google.com/'},
+    {id:'google_refresh_token',label:'Refresh Token',placeholder:'1//...',link:'#'}
+  ],instructions:'1. Go to Google Cloud Console\n2. Create a project\n3. Enable Calendar, Gmail, YouTube APIs\n4. Create OAuth2 credentials\n5. Complete OAuth flow to get refresh token'},
+  {id:'database',emoji:'🗄',title:'Database',desc:'Supabase, Firebase',keys:[
+    {id:'supabase_url',label:'Supabase URL',placeholder:'https://xxx.supabase.co',link:'https://supabase.com/'},
+    {id:'supabase_key',label:'Supabase Key',placeholder:'eyJ...',link:'https://supabase.com/'},
+    {id:'firebase_key',label:'Firebase',placeholder:'AIza...',link:'https://console.firebase.google.com/'}
+  ]},
+  {id:'dev',emoji:'💻',title:'Dev Tools',desc:'GitHub',keys:[
+    {id:'github_token',label:'GitHub',placeholder:'ghp_...',link:'https://github.com/settings/tokens'}
+  ]},
+  {id:'messengers',emoji:'💬',title:'Messengers',desc:'Telegram, Discord',keys:[
+    {id:'telegram_token',label:'Telegram',placeholder:'123456:ABC...',link:'https://t.me/BotFather'},
+    {id:'discord_token',label:'Discord',placeholder:'...',link:'https://discord.com/developers/applications'}
+  ]},
+  {id:'media',emoji:'🎨',title:'Media & AI',desc:'Hugging Face, Replicate, Together AI',keys:[
+    {id:'hf_token',label:'Hugging Face',placeholder:'hf_...',link:'https://huggingface.co/settings/tokens'},
+    {id:'replicate_token',label:'Replicate',placeholder:'r8_...',link:'https://replicate.com/account/api-tokens'},
+    {id:'together_key',label:'Together AI',placeholder:'...',link:'https://api.together.xyz/settings/api-keys'}
+  ]}
+];
+
+let config=JSON.parse(localStorage.getItem('igris_config')||'{}');
+
+function renderSections(){
+  const container=document.getElementById('sections');
+  container.innerHTML='';
+  SECTIONS.forEach(sec=>{
+    const configured=sec.keys.filter(k=>config[k.id]).length;
+    const total=sec.keys.length;
+    const statusClass=configured===total?'status-configured':configured>0?'status-partial':'status-none';
+    const statusText=configured===total?'✓ Configured':configured>0?`${configured}/${total}`:'Not configured';
+    let html=`<div class="section">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('open')">
+        <span class="emoji">${sec.emoji}</span>
+        <div class="info"><h3>${sec.title}</h3><p>${sec.desc}</p></div>
+        <span class="status ${statusClass}">${statusText}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="section-body">`;
+    sec.keys.forEach(k=>{
+      const val=config[k.id]||'';
+      html+=`<div class="key-row">
+        <label>${k.label}</label>
+        <div class="key-input-wrap">
+          <input class="key-input" type="password" id="${k.id}" value="${val}" placeholder="${k.placeholder}" data-key="${k.id}">
+          <button class="toggle-vis" onclick="toggleVis('${k.id}')">👁</button>
+        </div>
+        <button class="test-btn" onclick="testKey('${k.id}',this)"><span class="spinner"></span>Test</button>
+      </div>
+      <a class="key-link" href="${k.link}" target="_blank">↗ Get ${k.label} key</a>`;
+    });
+    if(sec.instructions){
+      html+=`<details class="instructions"><summary>Setup instructions</summary><div class="steps"><ol>${sec.instructions.split('\n').map(s=>'<li>'+s.replace(/^\d+\.\s*/,'')+'</li>').join('')}</ol></div></details>`;
+    }
+    html+=`</div></div>`;
+    container.innerHTML+=html;
+  });
+  updateProgress();
+}
+
+function toggleVis(id){
+  const inp=document.getElementById(id);
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+function testKey(id,btn){
+  btn.classList.add('loading');
+  setTimeout(()=>{
+    btn.classList.remove('loading');
+    const val=document.getElementById(id).value;
+    if(val.length>5){btn.textContent='✓ OK';btn.style.color='var(--green)'}
+    else{btn.textContent='✗ Empty';btn.style.color='var(--red)'}
+    setTimeout(()=>{btn.innerHTML='<span class="spinner"></span>Test';btn.style.color=''},2000);
+  },1200);
+}
+
+function updateProgress(){
+  let total=0,configured=0;
+  SECTIONS.forEach(s=>{total+=s.keys.length;s.keys.forEach(k=>{if(config[k.id])configured++})});
+  document.getElementById('progressCount').textContent=`${configured} of ${total} services`;
+  document.getElementById('progressFill').style.width=(configured/total*100)+'%';
+}
+
+function saveAll(){
+  document.querySelectorAll('.key-input').forEach(inp=>{
+    if(inp.value.trim())config[inp.dataset.key]=inp.value.trim();
+    else delete config[inp.dataset.key];
+  });
+  config.accessLevel=document.getElementById('accessLevel').value;
+  config.confirmMode=document.getElementById('confirmMode').value;
+  const pin=document.getElementById('pinInput').value;
+  if(pin)config.pin=pin;
+  localStorage.setItem('igris_config',JSON.stringify(config));
+  const btn=document.getElementById('saveBtn');
+  btn.textContent='✓ Saved!';btn.classList.add('saved');
+  setTimeout(()=>{btn.textContent='💾 Save Configuration';btn.classList.remove('saved')},2000);
+  updateProgress();
+  renderSections();
+}
+
+function resetAll(){if(confirm('Reset all settings?')){config={};localStorage.removeItem('igris_config');renderSections()}}
+
+function exportConfig(){
+  const blob=new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='igris-config.json';a.click();
+}
+
+function importConfig(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.json';
+  inp.onchange=e=>{
+    const reader=new FileReader();
+    reader.onload=()=>{try{config=JSON.parse(reader.result);localStorage.setItem('igris_config',JSON.stringify(config));renderSections()}catch(e){alert('Invalid config file')}};
+    reader.readAsText(e.target.files[0]);
+  };
+  inp.click();
+}
+
+// Init
+if(config.accessLevel)document.getElementById('accessLevel').value=config.accessLevel;
+if(config.confirmMode)document.getElementById('confirmMode').value=config.confirmMode;
+if(config.pin)document.getElementById('pinInput').value=config.pin;
+renderSections();
+</script>
+</body>
+</html>

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IGRIS — Focus Timer</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#06060a;--surface:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);--red:#ef4444;--red-glow:rgba(239,68,68,0.3);--text:#e0e0e0;--text-muted:rgba(255,255,255,0.5);--glass:rgba(255,255,255,0.04)}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100vh;overflow:hidden;display:flex}
+h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-0.02em}
+.sidebar{width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:16px 0;gap:8px;flex-shrink:0}
+.sidebar .logo{width:40px;height:40px;background:var(--red);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:#fff;margin-bottom:16px;box-shadow:0 0 20px var(--red-glow)}
+.sidebar a{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);text-decoration:none;font-size:20px;transition:all .2s}
+.sidebar a:hover,.sidebar a.active{background:var(--glass);color:#fff}
+.sidebar a.active{color:var(--red)}
+.sidebar .spacer{flex:1}
+
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:32px}
+
+/* Timer circle */
+.timer-container{position:relative;width:300px;height:300px}
+.timer-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer-bg{fill:none;stroke:rgba(255,255,255,0.06);stroke-width:8}
+.timer-ring{fill:none;stroke:var(--red);stroke-width:8;stroke-linecap:round;transition:stroke-dashoffset 1s linear;filter:drop-shadow(0 0 8px var(--red-glow))}
+.timer-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.timer-time{font-family:'Space Grotesk',sans-serif;font-size:48px;font-weight:700;color:#fff}
+.timer-label{font-size:13px;color:var(--text-muted);margin-top:4px}
+
+/* Session info */
+.session-info{font-size:14px;color:var(--text-muted);text-align:center}
+.session-info .pomodoro{font-family:'Space Grotesk',sans-serif;font-weight:600;color:#fff;font-size:16px}
+.session-dots{display:flex;gap:8px;justify-content:center;margin-top:8px}
+.session-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--border)}
+.session-dot.done{background:var(--red);border-color:var(--red);box-shadow:0 0 8px var(--red-glow)}
+.session-dot.active{border-color:var(--red);animation:pulse 1.5s infinite}
+
+/* Controls */
+.controls{display:flex;gap:12px}
+.ctrl-btn{padding:12px 24px;border-radius:12px;border:1px solid var(--border);background:var(--glass);color:var(--text-muted);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.ctrl-btn:hover{border-color:var(--red);color:#fff}
+.ctrl-btn.primary{background:var(--red);border-color:var(--red);color:#fff}
+.ctrl-btn.primary:hover{background:#dc2626;box-shadow:0 0 20px var(--red-glow)}
+
+/* Stats */
+.stats-row{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.stat-item{text-align:center;min-width:100px}
+.stat-item .val{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff}
+.stat-item .lbl{font-size:11px;color:var(--text-muted);margin-top:4px}
+
+/* Ambient sounds */
+.ambient{display:flex;gap:10px}
+.ambient-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--glass);color:var(--text-muted);font-size:13px;cursor:pointer;transition:all .2s}
+.ambient-btn:hover,.ambient-btn.active{border-color:var(--red);color:#fff;background:rgba(239,68,68,0.08)}
+
+/* History */
+.history{width:100%;max-width:500px}
+.history h3{font-size:14px;color:#fff;margin-bottom:12px}
+.history-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:13px}
+.history-item .date{color:var(--text-muted)}
+.history-item .dur{color:var(--red);font-weight:600;font-family:'Space Grotesk',sans-serif}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:600px){.timer-container{width:240px;height:240px}.timer-time{font-size:36px}}
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">IG</div>
+  <a href="index.html" title="Chat">💬</a>
+  <a href="settings.html" title="Settings">⚙️</a>
+  <a href="avatar.html" title="Avatar">🗡️</a>
+  <a href="gallery.html" title="Gallery">🖼️</a>
+  <a href="dashboard.html" title="Dashboard">📊</a>
+  <a href="focus.html" class="active" title="Focus">⏱️</a>
+  <span class="spacer"></span>
+</nav>
+
+<div class="main">
+  <div class="session-info">
+    <div class="pomodoro" id="sessionLabel">Pomodoro 1 of 4</div>
+    <div class="session-dots" id="sessionDots">
+      <div class="session-dot active"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+      <div class="session-dot"></div>
+    </div>
+  </div>
+
+  <div class="timer-container">
+    <svg class="timer-svg" viewBox="0 0 300 300">
+      <circle class="timer-bg" cx="150" cy="150" r="140"/>
+      <circle class="timer-ring" id="timerRing" cx="150" cy="150" r="140"
+        stroke-dasharray="879.6" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-text">
+      <div class="timer-time" id="timerDisplay">25:00</div>
+      <div class="timer-label" id="timerLabel">Work Session</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn primary" id="startBtn" onclick="toggleTimer()">▶ Start</button>
+    <button class="ctrl-btn" onclick="skipSession()">⏭ Skip</button>
+    <button class="ctrl-btn" onclick="resetTimer()">↻ Reset</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item"><div class="val" id="linesVal">0</div><div class="lbl">Lines of Code</div></div>
+    <div class="stat-item"><div class="val" id="cmdsVal">0</div><div class="lbl">Commands Run</div></div>
+    <div class="stat-item"><div class="val" id="filesVal">0</div><div class="lbl">Files Edited</div></div>
+  </div>
+
+  <div class="ambient">
+    <button class="ambient-btn" onclick="toggleAmbient('rain',this)">🌧 Rain</button>
+    <button class="ambient-btn" onclick="toggleAmbient('cafe',this)">☕ Café</button>
+    <button class="ambient-btn" onclick="toggleAmbient('fire',this)">🔥 Fire</button>
+  </div>
+
+  <div class="history">
+    <h3>Recent Sessions</h3>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script>
+const WORK=25*60,SHORT_BREAK=5*60,LONG_BREAK=15*60;
+const circumference=2*Math.PI*140;
+const ring=document.getElementById('timerRing');
+const display=document.getElementById('timerDisplay');
+const label=document.getElementById('timerLabel');
+const startBtn=document.getElementById('startBtn');
+const sessionLabel=document.getElementById('sessionLabel');
+const sessionDots=document.getElementById('sessionDots');
+
+let timeLeft=WORK,totalTime=WORK,running=false,interval=null;
+let currentSession=1,isBreak=false;
+let history=JSON.parse(localStorage.getItem('igris_focus_history')||'[]');
+
+function updateDisplay(){
+  const m=Math.floor(timeLeft/60);
+  const s=timeLeft%60;
+  display.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const offset=circumference*(1-timeLeft/totalTime);
+  ring.style.strokeDashoffset=offset;
+}
+
+function toggleTimer(){
+  if(running){running=false;clearInterval(interval);startBtn.textContent='▶ Start'}
+  else{running=true;startBtn.textContent='⏸ Pause';interval=setInterval(tick,1000)}
+}
+
+function tick(){
+  if(timeLeft<=0){completeSession();return}
+  timeLeft--;updateDisplay();
+}
+
+function completeSession(){
+  clearInterval(interval);running=false;startBtn.textContent='▶ Start';
+  if(!isBreak){
+    history.unshift({date:new Date().toISOString(),duration:totalTime/60,session:currentSession});
+    localStorage.setItem('igris_focus_history',JSON.stringify(history.slice(0,20)));
+    renderHistory();
+    const dots=sessionDots.children;
+    if(dots[currentSession-1])dots[currentSession-1].classList.add('done');
+    if(currentSession>=4){startLongBreak()}
+    else{startShortBreak()}
+  }else{
+    currentSession++;
+    if(currentSession>4)currentSession=1;
+    startWork();
+  }
+}
+
+function startWork(){
+  isBreak=false;totalTime=WORK;timeLeft=WORK;
+  label.textContent='Work Session';
+  sessionLabel.textContent=`Pomodoro ${currentSession} of 4`;
+  updateDots();updateDisplay();
+}
+
+function startShortBreak(){
+  isBreak=true;totalTime=SHORT_BREAK;timeLeft=SHORT_BREAK;
+  label.textContent='Short Break';updateDisplay();
+}
+
+function startLongBreak(){
+  isBreak=true;totalTime=LONG_BREAK;timeLeft=LONG_BREAK;
+  label.textContent='Long Break';updateDisplay();
+}
+
+function skipSession(){clearInterval(interval);running=false;startBtn.textContent='▶ Start';completeSession()}
+function resetTimer(){clearInterval(interval);running=false;startBtn.textContent='▶ Start';currentSession=1;isBreak=false;startWork()}
+
+function updateDots(){
+  sessionDots.innerHTML='';
+  for(let i=1;i<=4;i++){
+    const d=document.createElement('div');
+    d.className='session-dot';
+    if(i<currentSession)d.classList.add('done');
+    if(i===currentSession)d.classList.add('active');
+    sessionDots.appendChild(d);
+  }
+}
+
+function renderHistory(){
+  const list=document.getElementById('historyList');
+  if(!history.length){list.innerHTML='<p style="color:var(--text-muted);font-size:13px">No sessions yet. Start your first focus session!</p>';return}
+  list.innerHTML=history.slice(0,5).map(h=>{
+    const d=new Date(h.date);
+    return`<div class="history-item"><span class="date">${d.toLocaleDateString()} ${d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span><span class="dur">${h.duration} min</span></div>`;
+  }).join('');
+}
+
+let activeAmbient=null;
+function toggleAmbient(type,btn){
+  document.querySelectorAll('.ambient-btn').forEach(b=>b.classList.remove('active'));
+  if(activeAmbient===type){activeAmbient=null;return}
+  activeAmbient=type;btn.classList.add('active');
+  // Audio would be loaded here from actual ambient sound URLs
+}
+
+// Simulated live stats
+setInterval(()=>{
+  if(!running)return;
+  const l=document.getElementById('linesVal');
+  const c=document.getElementById('cmdsVal');
+  const f=document.getElementById('filesVal');
+  if(Math.random()>0.7)l.textContent=parseInt(l.textContent)+Math.floor(Math.random()*5);
+  if(Math.random()>0.85)c.textContent=parseInt(c.textContent)+1;
+  if(Math.random()>0.9)f.textContent=parseInt(f.textContent)+1;
+},3000);
+
+ring.style.strokeDasharray=circumference;
+updateDisplay();updateDots();renderHistory();
+</script>
+</body>
+</html>
